@@ -10,7 +10,12 @@ dotenv.config();
 
 const SECRET = process.env.SECRET;
 console.log("Loaded SECRET =", SECRET);
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// REQUIRED CHANGE FOR DEPLOYMENT:
 const PORT = process.env.PORT || 3000;
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 const MAX_TIME_MS = 3 * 60 * 1000; // 3 minutes
 
 const app = express();
@@ -139,7 +144,7 @@ app.post("/", async (req, res) => {
 
               const resp = await fetch(submitUrl, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                  headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
               });
 
@@ -165,7 +170,7 @@ app.post("/", async (req, res) => {
   })();
 });
 
-// START SERVER
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// START SERVER (UPDATED)
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
