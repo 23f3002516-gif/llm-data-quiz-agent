@@ -1,18 +1,17 @@
 {
   "name": "llm-quiz-solver",
   "version": "1.0.0",
-  "description": "Automated quiz-solving endpoint using Node.js, Express, and Playwright.",
   "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "license": "MIT",
   "dependencies": {
-    "body-parser": "^1.20.2",
     "express": "^4.18.2",
+    "body-parser": "^1.20.2",
     "node-fetch": "^3.3.2",
-    "playwright": "^1.40.0",
-    "dotenv": "^16.3.1"
-  }
+    "dotenv": "^16.3.1",
+    "playwright-chromium": "^1.45.0"
+}
+
 }
