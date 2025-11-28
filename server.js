@@ -21,7 +21,6 @@ function send(res, code, obj) {
   res.status(code).json(obj);
 }
 
-// MAIN ENDPOINT
 app.post("/", async (req, res) => {
   if (!req.is("application/json") || typeof req.body !== "object") {
     return send(res, 400, { error: "Invalid JSON" });
@@ -33,35 +32,30 @@ app.post("/", async (req, res) => {
     return send(res, 400, { error: "Missing required fields" });
   }
 
-  // SECRET CHECK
   if (secret !== SECRET) {
     return send(res, 403, { error: "Invalid secret" });
   }
 
-  // Respond immediately (as required)
   send(res, 200, { status: "accepted", message: "Processing quiz..." });
 
-  // Background processing
   (async () => {
     const deadline = Date.now() + MAX_TIME_MS;
 
-    // ✔ FIX: Chromium executablePath for Render
-    const browser = await chromium.launch({
-      headless: true
-      });
+    // Launch Chromium (Render automatically installs the binary)
+    const browser = await chromium.launch({ headless: true });
 
     try {
       let nextUrl = url;
 
       while (nextUrl && Date.now() < deadline) {
-        console.log(`Visiting: ${nextUrl}`);
+        console.log("Visiting:", nextUrl);
 
         const page = await browser.newPage();
         await page.goto(nextUrl, { waitUntil: "networkidle", timeout: 60000 });
 
         const html = await page.content();
 
-        // ===== 1. Base64 embedded JSON detection =====
+        // -------- Base64 embedded question --------
         const atobMatch = html.match(/atob\(`([\s\S]*?)`\)/);
         if (atobMatch) {
           try {
@@ -99,20 +93,18 @@ app.post("/", async (req, res) => {
                 }
               }
             }
-          } catch { }
+          } catch {}
         }
 
-        // ===== 2. Table sum extraction =====
+        // -------- Table extraction --------
         const tables = await page.evaluate(() => {
           const result = [];
           document.querySelectorAll("table").forEach((table) => {
-            const headers = [...table.querySelectorAll("thead th")].map((h) =>
+            const headers = [...table.querySelectorAll("thead th")].map(h =>
               h.innerText.trim()
             );
-            const rows = [...table.querySelectorAll("tbody tr")].map((tr) =>
-              [...tr.querySelectorAll("td")].map((td) =>
-                td.innerText.trim()
-              )
+            const rows = [...table.querySelectorAll("tbody tr")].map(tr =>
+              [...tr.querySelectorAll("td")].map(td => td.innerText.trim())
             );
             result.push({ headers, data: rows });
           });
@@ -120,7 +112,7 @@ app.post("/", async (req, res) => {
         });
 
         for (const t of tables) {
-          const idx = t.headers.findIndex((h) => /value/i.test(h));
+          const idx = t.headers.findIndex(h => /value/i.test(h));
           if (idx >= 0) {
             let sum = 0;
             for (const row of t.data) {
@@ -134,8 +126,7 @@ app.post("/", async (req, res) => {
               const form = document.querySelector("form");
               if (form?.action) return form.action;
 
-              const links = [...document.querySelectorAll("a")];
-              const link = links.find((a) =>
+              const link = [...document.querySelectorAll("a")].find(a =>
                 /submit|answer/i.test(a.innerText)
               );
               return link ? link.href : null;
@@ -177,8 +168,6 @@ app.post("/", async (req, res) => {
   })();
 });
 
-// START SERVER
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
