@@ -3,7 +3,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
-import { chromium } from "playwright-chromium";
+import { chromium } from "playwright";
 import dotenv from "dotenv";
 
 dotenv.config();
