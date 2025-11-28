@@ -46,7 +46,11 @@ app.post("/", async (req, res) => {
 
   (async () => {
     const deadline = Date.now() + MAX_TIME_MS;
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch({
+  headless: true,
+  executablePath: chromium.executablePath()
+});
+
 
     try {
       let nextUrl = url;
