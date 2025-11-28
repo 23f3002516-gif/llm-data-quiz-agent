@@ -3,7 +3,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
-import { chromium } from "playwright";
+import { chromium } from "playwright-chromium";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -47,9 +47,8 @@ app.post("/", async (req, res) => {
 
     // ✔ FIX: Chromium executablePath for Render
     const browser = await chromium.launch({
-      headless: true,
-      executablePath: chromium.executablePath()
-    });
+      headless: true
+      });
 
     try {
       let nextUrl = url;
