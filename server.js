@@ -11,11 +11,7 @@ dotenv.config();
 const SECRET = process.env.SECRET;
 console.log("Loaded SECRET =", SECRET);
 
-// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// REQUIRED CHANGE FOR DEPLOYMENT:
 const PORT = process.env.PORT || 3000;
-// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
 const MAX_TIME_MS = 3 * 60 * 1000; // 3 minutes
 
 const app = express();
@@ -42,15 +38,18 @@ app.post("/", async (req, res) => {
     return send(res, 403, { error: "Invalid secret" });
   }
 
+  // Respond immediately (as required)
   send(res, 200, { status: "accepted", message: "Processing quiz..." });
 
+  // Background processing
   (async () => {
     const deadline = Date.now() + MAX_TIME_MS;
-    const browser = await chromium.launch({
-  headless: true,
-  executablePath: chromium.executablePath()
-});
 
+    // ✔ FIX: Chromium executablePath for Render
+    const browser = await chromium.launch({
+      headless: true,
+      executablePath: chromium.executablePath()
+    });
 
     try {
       let nextUrl = url;
@@ -63,7 +62,7 @@ app.post("/", async (req, res) => {
 
         const html = await page.content();
 
-        // ========== 1. Try base64 extraction ==========
+        // ===== 1. Base64 embedded JSON detection =====
         const atobMatch = html.match(/atob\(`([\s\S]*?)`\)/);
         if (atobMatch) {
           try {
@@ -83,13 +82,13 @@ app.post("/", async (req, res) => {
                     email,
                     secret,
                     url: nextUrl,
-                    answer: parsed.answer,
+                    answer: parsed.answer
                   };
 
                   const resp = await fetch(submitUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(payload)
                   });
 
                   const respJson = await resp.json();
@@ -101,10 +100,10 @@ app.post("/", async (req, res) => {
                 }
               }
             }
-          } catch {}
+          } catch { }
         }
 
-        // ========== 2. Try table-sum extraction ==========
+        // ===== 2. Table sum extraction =====
         const tables = await page.evaluate(() => {
           const result = [];
           document.querySelectorAll("table").forEach((table) => {
@@ -112,7 +111,9 @@ app.post("/", async (req, res) => {
               h.innerText.trim()
             );
             const rows = [...table.querySelectorAll("tbody tr")].map((tr) =>
-              [...tr.querySelectorAll("td")].map((td) => td.innerText.trim())
+              [...tr.querySelectorAll("td")].map((td) =>
+                td.innerText.trim()
+              )
             );
             result.push({ headers, data: rows });
           });
@@ -133,9 +134,12 @@ app.post("/", async (req, res) => {
             const submitUrl = await page.evaluate(() => {
               const form = document.querySelector("form");
               if (form?.action) return form.action;
+
               const links = [...document.querySelectorAll("a")];
-              const l = links.find((a) => /submit|answer/i.test(a.innerText));
-              return l ? l.href : null;
+              const link = links.find((a) =>
+                /submit|answer/i.test(a.innerText)
+              );
+              return link ? link.href : null;
             });
 
             if (submitUrl) {
@@ -143,13 +147,13 @@ app.post("/", async (req, res) => {
                 email,
                 secret,
                 url: nextUrl,
-                answer: sum,
+                answer: sum
               };
 
               const resp = await fetch(submitUrl, {
                 method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
               });
 
               const respJson = await resp.json();
@@ -167,14 +171,15 @@ app.post("/", async (req, res) => {
         await page.close();
       }
     } catch (err) {
-      console.log("Fatal error:", err);
+      console.error("Fatal error:", err);
     } finally {
       await browser.close();
     }
   })();
 });
 
-// START SERVER (UPDATED)
-app.listen(PORT, "0.0.0.0", () => {
+// START SERVER
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
